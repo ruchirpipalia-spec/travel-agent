@@ -66,13 +66,13 @@ You need these accounts and keys:
 
 | Key | Where to get it |
 |-----|----------------|
-| `ANTHROPIC_API_KEY` | [console.anthropic.com](https://console.anthropic.com) |
-| `SERPAPI_KEY` | [serpapi.com/dashboard](https://serpapi.com/dashboard) |
-| `TELEGRAM_BOT_TOKEN` | Message [@BotFather](https://t.me/botfather) on Telegram |
-| `GMAIL_ADDRESS` | Your Gmail address |
-| `GMAIL_APP_PASSWORD` | [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords) |
-| `SUPABASE_URL` | Your Supabase project URL |
-| `SUPABASE_KEY` | Your Supabase anon public key |
+    `ANTHROPIC_API_KEY` | [console.anthropic.com](https://console.anthropic.com) |
+    `SERPAPI_KEY` | [serpapi.com/dashboard](https://serpapi.com/dashboard) |
+    `TELEGRAM_BOT_TOKEN` | Message [@BotFather](https://t.me/botfather) on Telegram |
+    `GMAIL_ADDRESS` | Your Gmail address |
+    `GMAIL_APP_PASSWORD` | [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords) |
+    `SUPABASE_URL` | Your Supabase project URL |
+    `SUPABASE_KEY` | Your Supabase anon public key |
 
 ### 4. Set up Supabase
 
@@ -103,6 +103,7 @@ touch .env
 ```
 
 Add your keys:
+
     ANTHROPIC_API_KEY=your_key_here
     SERPAPI_KEY=your_key_here
     TELEGRAM_BOT_TOKEN=your_token_here
@@ -134,15 +135,16 @@ Open Telegram, find your bot, and start chatting.
 
 ## Project structure
 
-travel-agent/
-├── agent.py # Main chatbot logic, flight/hotel search, memory
-├── alerts.py # Background price checker and email alerts
-├── memory.py # Supabase cloud memory read/write functions
-├── telegram_bot.py # Telegram interface + 24hr price check scheduler
-├── requirements.txt # Python dependencies
-├── Procfile # Tells Railway how to run the bot
-├── .env # API keys (never commit this)
-└── .gitignore # Keeps .env and memory.json off GitHub
+** travel-agent/
+
+    - agent.py # Main chatbot logic, flight/hotel search, memory
+    - alerts.py # Background price checker and email alerts
+    - memory.py # Supabase cloud memory read/write functions
+    - telegram_bot.py # Telegram interface + 24hr price check scheduler
+    - requirements.txt # Python dependencies
+    - Procfile # Tells Railway how to run the bot
+    - .env # API keys (never commit this)
+    - .gitignore # Keeps .env and memory.json off GitHub
 
 
 ---
