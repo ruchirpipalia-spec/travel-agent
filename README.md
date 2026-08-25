@@ -2,7 +2,7 @@
 
 A personal AI-powered travel agent that searches live flight and hotel prices, tracks fares over time, and sends you alerts when prices drop — all accessible via Telegram.
 
-Built with Claude AI, SerpAPI, and Python.
+Built with Claude AI, SerpAPI, and Python. Started from zero coding experience.
 
 ---
 
@@ -13,6 +13,7 @@ Built with Claude AI, SerpAPI, and Python.
 - **Price alerts** — tell it to watch a route and get emailed when fares drop below your threshold
 - **Memory** — remembers your home airport, preferences, and past searches across sessions
 - **Telegram interface** — chat with it from your phone like a real travel agent
+- **24/7 cloud** — runs on Railway, always online even when your laptop is off
 
 ---
 
@@ -27,6 +28,9 @@ Agent: Got it! I'll monitor SFO → DUB and email you when prices drop below $70
 You: What hotels do you recommend in Dublin for those dates?
 Agent: Here are the top options in Dublin for March 4–18...
 
+You: Actually change my alert to under $650
+Agent: Done! Updated your Dublin alert to below $650.
+
 
 ---
 
@@ -34,10 +38,10 @@ Agent: Here are the top options in Dublin for March 4–18...
 
 - **AI** — [Claude API](https://anthropic.com) (claude-sonnet-4-6)
 - **Flight & hotel data** — [SerpAPI](https://serpapi.com) (Google Flights + Google Hotels)
+- **Memory** — [Supabase](https://supabase.com) (cloud database, persists across sessions)
 - **Notifications** — Gmail via SMTP
 - **Interface** — Telegram Bot API
-- **Memory** — JSON file (local persistence)
-- **Scheduler** — macOS launchd (24hr price checks)
+- **Hosting** — Railway (24/7 cloud deployment)
 
 ---
 
@@ -53,12 +57,12 @@ cd travel-agent
 ### 2. Install dependencies
 
 ```bash
-pip3 install anthropic requests python-dotenv python-telegram-bot
+pip3 install anthropic requests python-dotenv python-telegram-bot supabase
 ```
 
 ### 3. Get your API keys
 
-You need four API keys:
+You need these accounts and keys:
 
 | Key | Where to get it |
 |-----|----------------|
@@ -66,24 +70,49 @@ You need four API keys:
 | `SERPAPI_KEY` | [serpapi.com/dashboard](https://serpapi.com/dashboard) |
 | `TELEGRAM_BOT_TOKEN` | Message [@BotFather](https://t.me/botfather) on Telegram |
 | `GMAIL_ADDRESS` | Your Gmail address |
-| `GMAIL_APP_PASSWORD` | [Google App Passwords](https://myaccount.google.com/apppasswords) |
+| `GMAIL_APP_PASSWORD` | [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords) |
+| `SUPABASE_URL` | Your Supabase project URL |
+| `SUPABASE_KEY` | Your Supabase anon public key |
 
-### 4. Create your .env file
+### 4. Set up Supabase
+
+1. Go to [supabase.com](https://supabase.com) and create a free account
+2. Create a new project
+3. Go to **SQL Editor** and run this query:
+
+```sql
+CREATE TABLE memory (
+    id TEXT PRIMARY KEY DEFAULT 'main',
+    preferences JSONB DEFAULT '{"home_airport": null, "preferred_airlines": [], "typical_trip_length": null, "seat_preference": null, "budget_range": null}',
+    past_searches JSONB DEFAULT '[]',
+    watched_routes JSONB DEFAULT '[]',
+    conversation_history JSONB DEFAULT '[]',
+    last_destination TEXT DEFAULT null,
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+INSERT INTO memory (id) VALUES ('main') ON CONFLICT DO NOTHING;
+```
+
+4. Go to **Project Settings → API** and copy your Project URL and anon public key
+
+### 5. Create your .env file
 
 ```bash
 touch .env
 ```
 
 Add your keys:
-
     ANTHROPIC_API_KEY=your_key_here
     SERPAPI_KEY=your_key_here
     TELEGRAM_BOT_TOKEN=your_token_here
     GMAIL_ADDRESS=your@gmail.com
     GMAIL_APP_PASSWORD=your_app_password_here
+    SUPABASE_URL=https://your-project.supabase.co
+    SUPABASE_KEY=your_anon_key_here
 
 
-### 5. Run the Telegram bot
+### 6. Run locally
 
 ```bash
 python3 telegram_bot.py
@@ -91,84 +120,67 @@ python3 telegram_bot.py
 
 Open Telegram, find your bot, and start chatting.
 
-### 6. Run the price alert checker manually
-
-```bash
-python3 alerts.py
-```
-
 ---
 
-## Setting up automatic price checks (macOS)
+## Deploy to Railway (24/7 hosting)
 
-To run price checks every 24 hours automatically in the background:
-
-```bash
-cat > ~/Library/LaunchAgents/com.travelagent.pricechecker.plist << EOF
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>Label</key>
-    <string>com.travelagent.pricechecker</string>
-    <key>ProgramArguments</key>
-    <array>
-        <string>/usr/bin/python3</string>
-        <string>/YOUR/PATH/TO/travel-agent/alerts.py</string>
-    </array>
-    <key>WorkingDirectory</key>
-    <string>/YOUR/PATH/TO/travel-agent</string>
-    <key>StartInterval</key>
-    <integer>86400</integer>
-    <key>RunAtLoad</key>
-    <true/>
-    <key>StandardOutPath</key>
-    <string>/YOUR/PATH/TO/travel-agent/alerts.log</string>
-    <key>StandardErrorPath</key>
-    <string>/YOUR/PATH/TO/travel-agent/alerts.log</string>
-</dict>
-</plist>
-EOF
-```
-
-Replace `/YOUR/PATH/TO/travel-agent` with your actual path, then:
-
-```bash
-launchctl load ~/Library/LaunchAgents/com.travelagent.pricechecker.plist
-```
+1. Push your code to GitHub
+2. Go to [railway.app](https://railway.app) and sign in with GitHub
+3. Click **New Project → Deploy from GitHub repo** and select your repo
+4. Go to **Variables** and add all your API keys from `.env`
+5. Railway will auto-deploy — your bot is now always online
 
 ---
 
 ## Project structure
 
-```
 travel-agent/
-├── agent.py          # Main chatbot logic, flight/hotel search, memory
-├── alerts.py         # Background price checker and email alerts
-├── memory.py         # Memory read/write functions
-├── telegram_bot.py   # Telegram interface
-├── .env              # API keys (never commit this)
-└── .gitignore        # Keeps .env and memory.json off GitHub
-```
+├── agent.py # Main chatbot logic, flight/hotel search, memory
+├── alerts.py # Background price checker and email alerts
+├── memory.py # Supabase cloud memory read/write functions
+├── telegram_bot.py # Telegram interface + 24hr price check scheduler
+├── requirements.txt # Python dependencies
+├── Procfile # Tells Railway how to run the bot
+├── .env # API keys (never commit this)
+└── .gitignore # Keeps .env and memory.json off GitHub
+
 
 ---
 
 ## How it works
 
-Your message goes to the Telegram bot → passed to Claude AI → Claude decides whether to search flights, hotels, or save a price alert → SerpAPI fetches live data → Claude formats the response → you get a reply in Telegram.
+**When you send a message:**
+Your message → Telegram → Claude AI → SerpAPI (if needed) → Claude formats response → Telegram reply
 
-Price alerts are saved to `memory.json`. A separate scheduler runs `alerts.py` every 24 hours, checks current prices via SerpAPI, and sends a Gmail notification if any watched route drops below your threshold.
+**When prices are checked (every 24 hours automatically):**
+Scheduler wakes up → reads watched routes from Supabase → checks live prices via SerpAPI → sends Gmail alert if price drops below threshold
+
+**Memory** is stored in Supabase so it persists forever — across sessions, redeploys, and restarts.
+
+---
+
+## Cost breakdown (personal use)
+
+| Service | Cost |
+|---------|------|
+| Anthropic API | ~$1–2/month |
+| SerpAPI | Free (250 searches/month) |
+| Supabase | Free tier |
+| Railway | ~$5/month after free trial |
+| **Total** | **~$6–7/month** |
 
 ---
 
 ## Notes
 
-- SerpAPI free tier includes 250 searches/month — enough for personal use with 24hr checking on a few routes
-- The Telegram bot requires your terminal to be running locally, or deploy to Railway/Render for 24/7 uptime
-- Memory is stored locally in `memory.json` — not synced across devices
+- SerpAPI free tier includes 250 searches/month — enough for personal use with daily checking on a few routes
+- Anthropic API charges per message — very cheap for personal use
+- Memory is stored in Supabase and persists across all sessions and deployments
 
 ---
 
 ## Built by
 
 Ruchir Pipalia — built as a learning project starting from zero coding experience.
+
+[github.com/ruchirpipalia-spec/travel-agent](https://github.com/ruchirpipalia-spec/travel-agent)
