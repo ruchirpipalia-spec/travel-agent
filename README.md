@@ -76,11 +76,11 @@ touch .env
 
 Add your keys:
 
-ANTHROPIC_API_KEY=your_key_here
-SERPAPI_KEY=your_key_here
-TELEGRAM_BOT_TOKEN=your_token_here
-GMAIL_ADDRESS=your@gmail.com
-GMAIL_APP_PASSWORD=your_app_password_here
+    ANTHROPIC_API_KEY=your_key_here
+    SERPAPI_KEY=your_key_here
+    TELEGRAM_BOT_TOKEN=your_token_here
+    GMAIL_ADDRESS=your@gmail.com
+    GMAIL_APP_PASSWORD=your_app_password_here
 
 
 ### 5. Run the Telegram bot
@@ -142,12 +142,12 @@ launchctl load ~/Library/LaunchAgents/com.travelagent.pricechecker.plist
 ## Project structure
 
 travel-agent/
-├── agent.py # Main chatbot logic, flight/hotel search, memory
-├── alerts.py # Background price checker and email alerts
-├── memory.py # Memory read/write functions
-├── telegram_bot.py # Telegram interface
-├── .env # API keys (never commit this)
-└── .gitignore # Keeps .env and memory.json off GitHub
+    agent.py # Main chatbot logic, flight/hotel search, memory
+    alerts.py # Background price checker and email alerts
+    memory.py # Memory read/write functions
+    telegram_bot.py # Telegram interface
+    .env # API keys (never commit this)
+    .gitignore # Keeps .env and memory.json off GitHub
 
 
 ---
