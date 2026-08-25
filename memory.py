@@ -1,13 +1,32 @@
-import json
 import os
 from datetime import datetime
+from supabase import create_client
+from dotenv import load_dotenv
 
-MEMORY_FILE = "memory.json"
+load_dotenv()
+
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 def load_memory():
-    if os.path.exists(MEMORY_FILE):
-        with open(MEMORY_FILE, "r") as f:
-            return json.load(f)
+    result = supabase.table("memory").select("*").eq("id", "main").execute()
+    if result.data:
+        row = result.data[0]
+        return {
+            "preferences": row.get("preferences", {
+                "home_airport": None,
+                "preferred_airlines": [],
+                "typical_trip_length": None,
+                "seat_preference": None,
+                "budget_range": None
+            }),
+            "past_searches": row.get("past_searches", []),
+            "watched_routes": row.get("watched_routes", []),
+            "conversation_history": row.get("conversation_history", []),
+            "last_destination": row.get("last_destination")
+        }
     return {
         "preferences": {
             "home_airport": None,
@@ -18,12 +37,20 @@ def load_memory():
         },
         "past_searches": [],
         "watched_routes": [],
-        "conversation_history": []
+        "conversation_history": [],
+        "last_destination": None
     }
 
 def save_memory(memory):
-    with open(MEMORY_FILE, "w") as f:
-        json.dump(memory, f, indent=2)
+    supabase.table("memory").upsert({
+        "id": "main",
+        "preferences": memory.get("preferences", {}),
+        "past_searches": memory.get("past_searches", []),
+        "watched_routes": memory.get("watched_routes", []),
+        "conversation_history": memory.get("conversation_history", []),
+        "last_destination": memory.get("last_destination"),
+        "updated_at": datetime.now().isoformat()
+    }).execute()
 
 def add_conversation(memory, role, content):
     memory["conversation_history"].append({
@@ -31,7 +58,6 @@ def add_conversation(memory, role, content):
         "content": content,
         "timestamp": datetime.now().isoformat()
     })
-    # Keep last 50 messages so the file doesn't grow forever
     if len(memory["conversation_history"]) > 50:
         memory["conversation_history"] = memory["conversation_history"][-50:]
     save_memory(memory)
@@ -42,7 +68,6 @@ def add_search(memory, search_type, details):
         "details": details,
         "timestamp": datetime.now().isoformat()
     })
-    # Keep last 20 searches
     if len(memory["past_searches"]) > 20:
         memory["past_searches"] = memory["past_searches"][-20:]
     save_memory(memory)
@@ -64,7 +89,7 @@ def add_watched_route(memory, origin, destination, outbound_date, return_date, t
 
 def get_memory_summary(memory):
     summary = ""
-    
+
     prefs = memory["preferences"]
     if any(prefs.values()):
         summary += "User preferences:\n"
