@@ -141,14 +141,15 @@ launchctl load ~/Library/LaunchAgents/com.travelagent.pricechecker.plist
 
 ## Project structure
 
+```
 travel-agent/
-    agent.py # Main chatbot logic, flight/hotel search, memory
-    alerts.py # Background price checker and email alerts
-    memory.py # Memory read/write functions
-    telegram_bot.py # Telegram interface
-    .env # API keys (never commit this)
-    .gitignore # Keeps .env and memory.json off GitHub
-
+├── agent.py          # Main chatbot logic, flight/hotel search, memory
+├── alerts.py         # Background price checker and email alerts
+├── memory.py         # Memory read/write functions
+├── telegram_bot.py   # Telegram interface
+├── .env              # API keys (never commit this)
+└── .gitignore        # Keeps .env and memory.json off GitHub
+```
 
 ---
 
