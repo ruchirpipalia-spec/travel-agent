@@ -141,7 +141,8 @@ def extract_airports(message):
         "atlanta": "ATL", "atl": "ATL",
         "rome": "FCO", "fco": "FCO",
         "barcelona": "BCN", "bcn": "BCN",
-        "lisbon": "LIS", "lis": "LIS"
+        "lisbon": "LIS", "lis": "LIS",
+        "houston": "IAH", "iah": "IAH"
     }
 
     message_lower = message.lower()
@@ -185,7 +186,6 @@ def build_flight_info(user_message):
 
     home = memory["preferences"]["home_airport"]
     if len(airports) >= 2:
-        # If home airport is in the list, always make it the origin
         if home and home in airports:
             info["origin"] = home
             info["destination"] = [a for a in airports if a != home][0]
@@ -258,26 +258,47 @@ def detect_preferences(message):
         update_preferences(memory, "seat_preference", "window")
     elif "aisle" in message_lower and any(word in message_lower for word in ["prefer", "like", "always"]):
         update_preferences(memory, "seat_preference", "aisle")
-    
-        # Detect price alert requests
+
+    # Detect price alert requests
     alert_phrases = ["alert me", "notify me", "watch", "track", "let me know when", "tell me when"]
-    if any(phrase in message_lower for phrase in alert_phrases):
+    update_phrases = ["change my alert", "update my alert", "make it under", "lower my threshold",
+                      "change the alert", "update the threshold", "change it to", "make the alert"]
+
+    is_new_alert = any(phrase in message_lower for phrase in alert_phrases)
+    is_update = any(phrase in message_lower for phrase in update_phrases)
+
+    if is_new_alert or is_update:
         info = build_flight_info(message)
-        # Look for a price threshold
         price_match = re.search(r'\$?(\d{3,4})', message)
-        if price_match and "origin" in info and "destination" in info and "departure_date" in info:
+        if price_match:
             threshold = int(price_match.group(1))
             from memory import add_watched_route, save_memory
-            add_watched_route(
-                memory,
-                info["origin"],
-                info["destination"],
-                info["departure_date"],
-                info.get("return_date", ""),
-                threshold
-            )
-            save_memory(memory)
-            print(f"🔔 Watching {info['origin']} → {info['destination']} — alert below ${threshold}")
+
+            existing = memory.get("watched_routes", [])
+            updated = False
+            for route in existing:
+                same_origin = "origin" not in info or route["origin"] == info.get("origin")
+                same_dest = "destination" not in info or route["destination"] == info.get("destination")
+                if same_origin and same_dest:
+                    route["threshold"] = threshold
+                    updated = True
+                    save_memory(memory)
+                    print(f"🔔 Updated alert: {route['origin']} → {route['destination']} — new threshold ${threshold}")
+                    break
+
+            if not updated and "origin" in info and "destination" in info and "departure_date" in info:
+                add_watched_route(
+                    memory,
+                    info["origin"],
+                    info["destination"],
+                    info["departure_date"],
+                    info.get("return_date", ""),
+                    threshold
+                )
+                save_memory(memory)
+                print(f"🔔 Watching {info['origin']} → {info['destination']} — alert below ${threshold}")
+
+
 def chat(user_message):
     add_conversation(memory, "user", user_message)
     detect_preferences(user_message)
@@ -331,7 +352,8 @@ def chat(user_message):
             "ATL": "Atlanta, Georgia",
             "FCO": "Rome, Italy",
             "BCN": "Barcelona, Spain",
-            "LIS": "Lisbon, Portugal"
+            "LIS": "Lisbon, Portugal",
+            "IAH": "Houston, Texas"
         }
         airports = extract_airports(user_message)
         if not airports and memory.get("last_destination"):
@@ -384,6 +406,7 @@ def chat(user_message):
     add_conversation(memory, "assistant", assistant_message)
 
     return assistant_message
+
 
 def main():
     print("✈️  Travel Agent ready! Type 'quit' to exit.\n")
