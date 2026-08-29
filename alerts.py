@@ -1,28 +1,27 @@
 import os
-import json
 import requests
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime
 from dotenv import load_dotenv
+from supabase import create_client
 
 load_dotenv()
 
 SERPAPI_KEY = os.getenv("SERPAPI_KEY")
 GMAIL_ADDRESS = os.getenv("GMAIL_ADDRESS")
 GMAIL_APP_PASSWORD = os.getenv("GMAIL_APP_PASSWORD")
-MEMORY_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "memory.json")
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 
-def load_memory():
-    if os.path.exists(MEMORY_FILE):
-        with open(MEMORY_FILE, "r") as f:
-            return json.load(f)
-    return {"watched_routes": []}
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-def save_memory(memory):
-    with open(MEMORY_FILE, "w") as f:
-        json.dump(memory, f, indent=2)
+def load_watched_routes():
+    result = supabase.table("memory").select("watched_routes").eq("id", "main").execute()
+    if result.data:
+        return result.data[0].get("watched_routes", [])
+    return []
 
 def check_price(origin, destination, outbound_date, return_date):
     params = {
@@ -51,7 +50,7 @@ def send_alert(route, flight, threshold):
     subject = f"✈️ Price Alert: {route['origin']} → {route['destination']} is ${flight['price']}!"
 
     body = f"""
-Hi there!
+Hi Ruchir!
 
 Good news — a flight you're watching just dropped below your threshold!
 
@@ -85,8 +84,7 @@ Your Travel Agent 🌍
 def run_checks():
     print(f"\n🕐 Running price checks at {datetime.now().strftime('%Y-%m-%d %H:%M')}")
 
-    memory = load_memory()
-    watched = memory.get("watched_routes", [])
+    watched = load_watched_routes()
 
     if not watched:
         print("No routes being watched.")
